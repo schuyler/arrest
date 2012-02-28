@@ -11,16 +11,20 @@ class Client(object):
     >>> book = openlibrary.books["OL3438168M"]
     >>> book["title"]
     u'Mapping hacks'
+    >>> openlibrary = Client("http://openlibrary.org", ext=True)
+    >>> book = openlibrary.books["OL3438168M"]
+    >>> book["title"]
+    u'Mapping hacks'
     """
 
-    def __init__(self, path, opts={}):
+    def __init__(self, path, **opts):
         if path.endswith("/"): path = path[:-1]
         self.__path = path
         self.__opts = opts
 
     def __getattr__(self, name):
         if name.startswith("__"): return getattr(self, name)
-        return type(self)(self.__path + "/" + name, self.__opts)
+        return type(self)(self.__path + "/" + name, **self.__opts)
 
     def __getitem__(self, name):
         return self.__getattr__(name)()
@@ -30,13 +34,14 @@ class Client(object):
 
     def __call__(self, *args, **kwargs):
         headers = {"Accept": "application/json"}
-        request = None
+        request = data = None
+        url = self.__path
+        if self.__opts.get("ext"): url += ".json"
         if len(args) > 1:
             data = json.dumps(args[0])
-            request = urllib2.Request(self.__path, data, headers)
         else:
-            url = "%s?%s" % (self.__path, urllib.urlencode(kwargs))
-            request = urllib2.Request(url, None, headers)
+            url += "?" + urllib.urlencode(kwargs)
+        request = urllib2.Request(url, data, headers)
         opener = urllib2.urlopen(request)
         content = opener.read()
         return json.loads(content)
