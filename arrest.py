@@ -37,7 +37,7 @@ class Client(object):
         request = data = None
         url = self.__path
         if self.__opts.get("ext"): url += ".json"
-        if len(args) > 1:
+        if args:
             data = json.dumps(args[0])
         else:
             url += "?" + urllib.urlencode(kwargs)
