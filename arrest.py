@@ -11,10 +11,14 @@ class Client(object):
     >>> book = openlibrary.books["OL3438168M"]
     >>> book["title"]
     u'Mapping hacks'
-    >>> openlibrary = Client("http://openlibrary.org", ext=True)
+    >>> openlibrary = Client("http://openlibrary.org", ext="json")
     >>> book = openlibrary.books["OL3438168M"]
     >>> book["title"]
     u'Mapping hacks'
+    >>> twitter = Client("http://search.twitter.com/", ext="json", params={'rpp':10})
+    >>> search = twitter.search(q=u'flamb\xe9')
+    >>> len(search["results"])
+    10
     """
 
     def __init__(self, path, **opts):
@@ -33,14 +37,20 @@ class Client(object):
         return self.__path
 
     def __call__(self, *args, **kwargs):
+        opts = self.__opts
         headers = {"Accept": "application/json"}
         request = data = None
         url = self.__path
-        if self.__opts.get("ext"): url += ".json"
+        if opts.get("ext"): url += "." + opts["ext"]
         if args:
             data = json.dumps(args[0])
         else:
-            url += "?" + urllib.urlencode(kwargs)
+            params = opts["params"] if opts.get("params") else {}
+            params.update(kwargs)
+            for key, val in params.items():
+                if hasattr(val, "encode"):
+                    params[key] = val.encode("utf-8")
+            if params: url += "?" + urllib.urlencode(params)
         request = urllib2.Request(url, data, headers)
         opener = urllib2.urlopen(request)
         content = opener.read()
