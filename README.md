@@ -1,4 +1,4 @@
-= arrest - a REST client =
+# arrest - a REST client
 
 _arrest_ is a JSON REST client designed to be as easy to use as possible.
 
