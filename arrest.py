@@ -33,6 +33,15 @@ class Client(object):
     def __getitem__(self, name):
         return self.__getattr__(name)()
 
+    def __setitem__(self, name, body):
+        self.__getattr__(name)(body, __method="PUT")
+
+    def __delattr__(self, name):
+        self.__getattr__(name)(__method="DELETE")
+
+    def __delitem__(self, name):
+        self.__delattr__(name)
+
     def __unicode__(self):
         return self.__path
 
@@ -43,15 +52,19 @@ class Client(object):
         url = self.__path
         if opts.get("ext"): url += "." + opts["ext"]
         if args:
+            method = kwargs.pop("__method", "POST")
             data = json.dumps(args[0])
         else:
+            method = kwargs.pop("__method", "GET")
             params = opts["params"] if opts.get("params") else {}
             params.update(kwargs)
             for key, val in params.items():
                 if hasattr(val, "encode"):
                     params[key] = val.encode("utf-8")
             if params: url += "?" + urllib.urlencode(params)
+        opener = urllib2.build_opener(urllib2.HTTPHandler)
         request = urllib2.Request(url, data, headers)
+        request.get_method = lambda: method
         opener = urllib2.urlopen(request)
         content = opener.read()
         return json.loads(content)
